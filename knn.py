@@ -9,7 +9,6 @@ from sklearn.metrics.pairwise import pairwise_distances
 
 class CosineKNN():
     def __init__(self, n_neigbors=5):
-        self.simtree = []
         self.n_neigbors = n_neigbors
 
     def fit(self, X, y):
@@ -17,6 +16,7 @@ class CosineKNN():
         self.train = np.array(y)
 
     def predict(self, X):
+        self.simtree = []
         dist_dic = {}
         dic = {}
         near_labels = []
