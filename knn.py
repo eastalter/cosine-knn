@@ -1,8 +1,6 @@
 #!/usr/bin/env python
 # -*- coding: UTF-8 -*-
 
-import heapq
-
 import numpy as np
 from sklearn.metrics.pairwise import pairwise_distances
 
@@ -15,36 +13,29 @@ class CosineKNN():
         self.data = np.array(X)
         self.train = np.array(y)
 
-    def predict(self, X):
-        self.simtree = []
-        dist_dic = {}
-        dic = {}
-        near_labels = []
-        X = np.array([X])
-        X.reshape(-1, 1)
-        # make heap
-        for data in self.data:
-            sim = pairwise_distances(X, np.array(data).reshape(1, -1),
-                    metric='cosine')
-            dist_dic[float(sim)] = data
-            heapq.heappush(self.simtree, sim)
+    def set_sim(self, prediction):
+        self.sim = pairwise_distances(self.data, np.array(prediction), metric='cosine')
+        print self.sim.T
 
-        # make near labels list
-        for i in xrange(self.n_neigbors):
-            min_sim = heapq.heappop(self.simtree)
-            vector = dist_dic[float(min_sim)]
-            for index, item in enumerate(self.data):
-                if (item == vector).all():
-                    break
-            near_labels.append(self.train[index])
+    def knn(self):
+        # 類似度行列から、類似度の高い順に多いラベルをピックアップする
+        result = []
+        for aff in self.sim.T:
+            _, index = self.descending_order(aff)
+            label_counter = [0 for __ in range(max(self.train) + 1)]
+            for item in index:
+                label_counter[self.train[item]] += 1
+            label = label_counter.index(max(label_counter))
+            result.append(label)
+        return result
 
-        # search max label
-        for label in near_labels:
-            dic[label] = 0
-        for label in near_labels:
-            dic[label] += 1
-        y_pred = self.value_to_key(dic, max(dic.values()))
-        return y_pred
+    def descending_order(self, array):
+        index = []
+        data = []
+        for i in range(len(array)):
+            data.append(np.sort(array)[::][i])
+            index.append(np.argsort(array)[::][i])
+        return data[:self.n_neigbors], index[:self.n_neigbors]
 
     def value_to_key(self, dic, value):
         for key, val in zip(dic.keys(), dic.values()):
@@ -52,9 +43,9 @@ class CosineKNN():
                 return key
 
 if __name__ == '__main__':
-    I = CosineKNN(n_neigbors=2)
+    I = CosineKNN(n_neigbors=1)
     X = [[0.5, 0.86], [0.86, 0.5], [-0.5, -0.86], [-0.86, -0.5]]
-    y = [1, 1, 0, 0]
+    y = [0, 3, 2, 1]
     I.fit(X, y)
-    print 'answer:', I.predict([0.7, 0.7])
-    print 'answer:', I.predict([-0.7, -0.7])
+    I.set_sim([[0.1, 0.2], [-0.5, -0.8], [0.8, 0.5]])
+    print I.knn()
